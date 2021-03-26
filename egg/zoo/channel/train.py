@@ -136,11 +136,11 @@ def loss_impatient(sender_input, _message, message_length, _receiver_input, rece
     # 3. crible_acc gathers accuracy for each input/position, crible_loss gathers losses for each input/position
     crible_acc=torch.zeros(size=_message.size()).to("cuda")
     crible_loss=torch.zeros(size=_message.size()).to("cuda")
-    print(receiver_output[0].shape)
-    print(receiver_output[1].shape)
-    for i in range(receiver_output.size(0)):
-      crible_acc[:,i].add_((receiver_output[i,:].argmax(dim=1) == sender_input.argmax(dim=1)).detach().float())
-      crible_loss[:,i].add_(F.cross_entropy(receiver_output[i,:], sender_input.argmax(dim=1), reduction="none"))
+    print(receiver_output[0])
+    print(receiver_output[1])
+    for i in range(receiver_output[0].size(0)):
+      crible_acc[:,i].add_((receiver_output[0][i].argmax(dim=1) == sender_input.argmax(dim=1)).detach().float())
+      crible_loss[:,i].add_(F.cross_entropy(receiver_output[0][i], sender_input.argmax(dim=1), reduction="none"))
 
     # 4. Apply mask to remove the positions after EOS-token
     acc=crible_acc*len_mask
