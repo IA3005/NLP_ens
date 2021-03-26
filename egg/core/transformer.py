@@ -272,8 +272,12 @@ class TransformerDecoderLayer(nn.Module):
     """
     def __init__(self, num_heads, embed_dim, hidden_size, dropout=0.0, attention_dropout=0.0, activation_dropout=0.0):
         super().__init__()
-
+        self.hidden_size = hidden_size
+        self.num_heads = num_heads
         self.embed_dim = embed_dim
+        print('a=',self.embed_dim)
+        print('b=',self.hidden_size)
+        print('c=',self.num_heads)
         self.self_attn = torch.nn.MultiheadAttention(
             embed_dim=self.embed_dim,
             num_heads=num_heads,
