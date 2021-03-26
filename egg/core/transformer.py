@@ -49,7 +49,6 @@ class TransformerEncoder(nn.Module):
                  vocab_size: int,
                  max_len: int,
                  embed_dim: int,
-                 hidden_size: int,
                  num_layers: int = 1,
                  positional_embedding=True,
                  causal: bool = True) -> None:
@@ -64,7 +63,7 @@ class TransformerEncoder(nn.Module):
         self.base_encoder = TransformerBaseEncoder(vocab_size=vocab_size,
                                                    max_len=max_len,
                                                    embed_dim=embed_dim,
-                                                   num_heads=num_heads,
+                                                   num_heads=embed_layer//hidden_size,
                                                    num_layers=num_layers,
                                                    hidden_size=hidden_size,
                                                    positional_embedding=positional_embedding)
@@ -238,7 +237,7 @@ class TransformerDecoder(torch.nn.Module):
 
         self.layers = nn.ModuleList([])
         self.layers.extend([
-            TransformerDecoderLayer(num_heads, embed_dim, hidden_size)
+            TransformerDecoderLayer(embed_dim//hidden_size, embed_dim, hidden_size)
             for _ in range(num_layers)
         ])
 
@@ -280,7 +279,7 @@ class TransformerDecoderLayer(nn.Module):
         print('c=',self.num_heads)
         self.self_attn = torch.nn.MultiheadAttention(
             embed_dim=self.embed_dim,
-            num_heads=num_heads,
+            num_heads=self.num_heads,
             dropout=attention_dropout
         )  # self-attn?
 
