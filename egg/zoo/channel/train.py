@@ -344,7 +344,6 @@ def main(params):
             receiver = core.CnnReceiverDeterministic(receiver, opts.vocab_size, opts.receiver_embedding,
                                                      opts.receiver_hidden, cell=opts.receiver_cell,
                                                      num_layers=opts.receiver_num_layers)
-            else:
             if not opts.impatient:
               receiver = Receiver(n_features=opts.n_features, n_hidden=opts.receiver_hidden)
               receiver = core.RnnReceiverDeterministic(receiver, opts.vocab_size, opts.receiver_embedding,
