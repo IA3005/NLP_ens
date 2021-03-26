@@ -362,12 +362,18 @@ class RnnReceiverImpatient(nn.Module):
 
     def forward(self, message, input=None, lengths=None):
         encoded = self.encoder(message)
-
+        print("info1",type(encoded[0]))
+        print("info2",encoded)
         sequence = []
         logits = []
         entropy = []
-
-        for step in range(encoded.size(0)):
+        if type(encoded)==tuple:
+            n = len(encoded)
+        else:
+            n = encoded.size(0)
+            
+         
+        for step in range(n):
             h_t=encoded[step,:,:]
             step_logits = F.log_softmax(self.hidden_to_output(h_t), dim=1)
             distr = Categorical(logits=step_logits)
@@ -410,8 +416,13 @@ class RnnReceiverImpatientCompositionality(nn.Module):
         sequence = []
         slogits = []
         entropy = []
-
-        for step in range(encoded.size(0)):
+        
+        if type(encoded)==tuple:
+            n = len(encoded)
+        else:
+            n = encoded.size(0)
+        
+        for step in range(n):
 
             h_t=encoded[step,:,:]
             step_logits = F.log_softmax(self.hidden_to_output(h_t).reshape(h_t.size(0),self.n_attributes,self.n_values), dim=2)
