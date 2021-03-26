@@ -1093,7 +1093,7 @@ class TransformerReceiverDeterministic(nn.Module):
                                           max_len=max_len,
                                           embed_dim=embed_dim,
                                           num_heads=num_heads,
-                                          num_layers=num_layers,
+                                          num_layers=5,
                                           hidden_size=hidden_size,
                                           positional_embedding=positional_emb,
                                           causal=causal)
@@ -1145,7 +1145,7 @@ class TransformerSenderReinforce(nn.Module):
 
         self.transformer = TransformerDecoder(embed_dim=embed_dim,
                                               max_len=max_len, num_layers=num_layers,
-                                              num_heads=num_heads, hidden_size=hidden_size)
+                                              num_heads=5, hidden_size=hidden_size)
 
         self.embedding_to_vocab = nn.Linear(embed_dim, vocab_size)
 
