@@ -14,6 +14,8 @@ from egg.zoo.channel.features import OneHotLoader, UniformLoader
 from egg.zoo.channel.archs import Sender, Receiver
 from egg.core.reinforce_wrappers import RnnReceiverImpatient
 from egg.core.reinforce_wrappers import SenderImpatientReceiverRnnReinforce
+#from egg.core.reinforce_wrappers import CnnReceiverImpatient
+#from egg.core.reinforce_wrappers import SenderImpatientReceiverCnnReinforce
 from egg.core.util import dump_sender_receiver_impatient
 
 
@@ -52,9 +54,9 @@ def get_params(params):
                         help='How the next symbol is generated within the TransformerDecoder (default: in-place)')
 
     parser.add_argument('--sender_cell', type=str, default='rnn',
-                        help='Type of the cell used for Sender {rnn, gru, lstm, transformer} (default: rnn)')
+                        help='Type of the cell used for Sender {rnn, gru, lstm, transformer,cnn} (default: rnn)')
     parser.add_argument('--receiver_cell', type=str, default='rnn',
-                        help='Type of the model used for Receiver {rnn, gru, lstm, transformer} (default: rnn)')
+                        help='Type of the model used for Receiver {rnn, gru, lstm, transformer,cnn} (default: rnn)')
 
     parser.add_argument('--sender_entropy_coeff', type=float, default=1e-1,
                         help='The entropy regularisation coefficient for Sender (default: 1e-1)')
@@ -303,47 +305,61 @@ def main(params):
 
     # single batches with 1s on the diag
     test_loader = UniformLoader(opts.n_features)
-
+ 
     if opts.sender_cell == 'transformer':
         sender = Sender(n_features=opts.n_features, n_hidden=opts.sender_embedding)
         sender = core.TransformerSenderReinforce(agent=sender, vocab_size=opts.vocab_size,
                                                  embed_dim=opts.sender_embedding, max_len=opts.max_len,
-                                                 num_layers=opts.sender_num_layers, num_heads=opts.sender_num_heads,
+                                                 num_layers=opts.sender_num_layers, num_heads=5,
                                                  hidden_size=opts.sender_hidden,
                                                  force_eos=opts.force_eos,
                                                  generate_style=opts.sender_generate_style,
                                                  causal=opts.causal_sender)
     else:
-        sender = Sender(n_features=opts.n_features, n_hidden=opts.sender_hidden)
+        if opts.sender_cell=='cnn':
+            sender = Sender(n_features=opts.n_features, n_hidden=opts.sender_hidden)
+            #sender = core.CnnSenderReinforce(sender,
+           #                            opts.vocab_size, opts.sender_embedding, opts.sender_hidden,
+           #                            cell=opts.sender_cell, max_len=opts.max_len, num_layers=opts.sender_num_layers,
+            #                           force_eos=force_eos)      
+                  
+        else:
+            sender = Sender(n_features=opts.n_features, n_hidden=opts.sender_hidden)
 
-        sender = core.RnnSenderReinforce(sender,
-                                   opts.vocab_size, opts.sender_embedding, opts.sender_hidden,
-                                   cell=opts.sender_cell, max_len=opts.max_len, num_layers=opts.sender_num_layers,
-                                   force_eos=force_eos)
+            sender = core.RnnSenderReinforce(sender,
+                                       opts.vocab_size, opts.sender_embedding, opts.sender_hidden,
+                                       cell=opts.sender_cell, max_len=opts.max_len, num_layers=opts.sender_num_layers,
+                                       force_eos=force_eos)
     if opts.receiver_cell == 'transformer':
         receiver = Receiver(n_features=opts.n_features, n_hidden=opts.receiver_embedding)
         receiver = core.TransformerReceiverDeterministic(receiver, opts.vocab_size, opts.max_len,
-                                                         opts.receiver_embedding, opts.receiver_num_heads, opts.receiver_hidden,
+                                                         opts.receiver_embedding, 5, opts.receiver_hidden,
                                                          opts.receiver_num_layers, causal=opts.causal_receiver)
     else:
-
-        receiver = Receiver(n_features=opts.n_features, n_hidden=opts.receiver_hidden)
-
-        if not opts.impatient:
-          receiver = Receiver(n_features=opts.n_features, n_hidden=opts.receiver_hidden)
-          receiver = core.RnnReceiverDeterministic(receiver, opts.vocab_size, opts.receiver_embedding,
-                                                 opts.receiver_hidden, cell=opts.receiver_cell,
-                                                 num_layers=opts.receiver_num_layers)
+        if opts.receiver_cell=='cnn':
+           pass       
+                  
         else:
-          receiver = Receiver(n_features=opts.receiver_hidden, n_hidden=opts.vocab_size)
-          # If impatient 1
-          receiver = RnnReceiverImpatient(receiver, opts.vocab_size, opts.receiver_embedding,
-                                            opts.receiver_hidden, cell=opts.receiver_cell,
-                                            num_layers=opts.receiver_num_layers, max_len=opts.max_len, n_features=opts.n_features)
-          # If impatient 2
-          #receiver = RnnReceiverImpatient2(receiver, opts.vocab_size, opts.receiver_embedding,
-        #                                         opts.receiver_hidden, cell=opts.receiver_cell,
-        #                                         num_layers=opts.receiver_num_layers, max_len=opts.max_len, n_features=opts.n_features)
+            receiver = Receiver(n_features=opts.n_features, n_hidden=opts.receiver_hidden)
+            receiver = core.CnnReceiverDeterministic(receiver, opts.vocab_size, opts.receiver_embedding,
+                                                     opts.receiver_hidden, cell=opts.receiver_cell,
+                                                     num_layers=opts.receiver_num_layers)
+            else:
+            if not opts.impatient:
+              receiver = Receiver(n_features=opts.n_features, n_hidden=opts.receiver_hidden)
+              receiver = core.RnnReceiverDeterministic(receiver, opts.vocab_size, opts.receiver_embedding,
+                                                     opts.receiver_hidden, cell=opts.receiver_cell,
+                                                     num_layers=opts.receiver_num_layers)
+            else:
+              receiver = Receiver(n_features=opts.receiver_hidden, n_hidden=opts.vocab_size)
+              # If impatient 1
+              receiver = RnnReceiverImpatient(receiver, opts.vocab_size, opts.receiver_embedding,
+                                                opts.receiver_hidden, cell=opts.receiver_cell,
+                                                num_layers=opts.receiver_num_layers, max_len=opts.max_len, n_features=opts.n_features)
+              # If impatient 2
+              #receiver = RnnReceiverImpatient2(receiver, opts.vocab_size, opts.receiver_embedding,
+            #                                         opts.receiver_hidden, cell=opts.receiver_cell,
+            #                                         num_layers=opts.receiver_num_layers, max_len=opts.max_len, n_features=opts.n_features)
 
     if not opts.impatient:
         game = core.SenderReceiverRnnReinforce(sender, receiver, loss, sender_entropy_coeff=opts.sender_entropy_coeff,
