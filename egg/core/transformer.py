@@ -49,6 +49,8 @@ class TransformerEncoder(nn.Module):
                  vocab_size: int,
                  max_len: int,
                  embed_dim: int,
+                 num_heads: int,
+                 hidden_size: int,
                  num_layers: int = 1,
                  positional_embedding=True,
                  causal: bool = True) -> None:
@@ -63,7 +65,7 @@ class TransformerEncoder(nn.Module):
         self.base_encoder = TransformerBaseEncoder(vocab_size=vocab_size,
                                                    max_len=max_len,
                                                    embed_dim=embed_dim,
-                                                   num_heads= 5,
+                                                   num_heads=num_heads,
                                                    num_layers=num_layers,
                                                    hidden_size=hidden_size,
                                                    positional_embedding=positional_embedding)
@@ -139,7 +141,7 @@ class TransformerBaseEncoder(torch.nn.Module):
         self.layers.extend([
             TransformerEncoderLayer(
                 embed_dim=embed_dim,
-                num_heads=5,
+                num_heads=num_heads,
                 hidden_size=hidden_size
             )
             for _ in range(num_layers)
@@ -181,7 +183,7 @@ class TransformerEncoderLayer(nn.Module):
         super().__init__()
         self.embed_dim = embed_dim
 
-        self.self_attn = torch.nn.MultiheadAttention(embed_dim=self.embed_dim, num_heads=5,
+        self.self_attn = torch.nn.MultiheadAttention(embed_dim=self.embed_dim, num_heads=num_heads,
                                                      dropout=attention_dropout)
         self.self_attn_layer_norm = torch.nn.LayerNorm(self.embed_dim)
 
@@ -237,8 +239,8 @@ class TransformerDecoder(torch.nn.Module):
 
         self.layers = nn.ModuleList([])
         self.layers.extend([
-            TransformerDecoderLayer(5, embed_dim, hidden_size)
-            for _ in range(5)
+            TransformerDecoderLayer(num_heads, embed_dim, hidden_size)
+            for _ in range(num_layers)
         ])
 
         self.layer_norm = torch.nn.LayerNorm(embed_dim)
@@ -271,15 +273,11 @@ class TransformerDecoderLayer(nn.Module):
     """
     def __init__(self, num_heads, embed_dim, hidden_size, dropout=0.0, attention_dropout=0.0, activation_dropout=0.0):
         super().__init__()
-        self.hidden_size = hidden_size
-        self.num_heads = 5
+
         self.embed_dim = embed_dim
-        print('a=',self.embed_dim)
-        print('b=',self.hidden_size)
-        print('c=',self.num_heads)
         self.self_attn = torch.nn.MultiheadAttention(
             embed_dim=self.embed_dim,
-            num_heads=5,
+            num_heads=num_heads,
             dropout=attention_dropout
         )  # self-attn?
 
@@ -293,7 +291,7 @@ class TransformerDecoderLayer(nn.Module):
         # for (a) proper compatibility (b) in case we'll decide to pass multipel states
         self.encoder_attn = torch.nn.MultiheadAttention(
             embed_dim=self.embed_dim,
-            num_heads=5,
+            num_heads=num_heads,
             dropout=attention_dropout)
 
         self.encoder_attn_layer_norm = torch.nn.LayerNorm(self.embed_dim)
