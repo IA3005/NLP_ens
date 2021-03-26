@@ -138,8 +138,8 @@ def loss_impatient(sender_input, _message, message_length, _receiver_input, rece
     crible_loss=torch.zeros(size=_message.size()).to("cuda")
 
     for i in range(receiver_output.size(1)):
-      crible_acc[:,i].add_((receiver_output[:,i,:].argmax(dim=1) == sender_input.argmax(dim=1)).detach().float())
-      crible_loss[:,i].add_(F.cross_entropy(receiver_output[:,i,:], sender_input.argmax(dim=1), reduction="none"))
+      crible_acc[:,i].add_((receiver_output[:,i].argmax(dim=1) == sender_input.argmax(dim=1)).detach().float())
+      crible_loss[:,i].add_(F.cross_entropy(receiver_output[:,i], sender_input.argmax(dim=1), reduction="none"))
 
     # 4. Apply mask to remove the positions after EOS-token
     acc=crible_acc*len_mask
@@ -318,10 +318,10 @@ def main(params):
     else:
         if opts.sender_cell=='cnn':
             sender = Sender(n_features=opts.n_features, n_hidden=opts.sender_hidden)
-            #sender = core.CnnSenderReinforce(sender,
-           #                            opts.vocab_size, opts.sender_embedding, opts.sender_hidden,
-           #                            cell=opts.sender_cell, max_len=opts.max_len, num_layers=opts.sender_num_layers,
-            #                           force_eos=force_eos)      
+            sender = CnnSenderReinforce(sender,
+                                       opts.vocab_size, opts.sender_embedding, opts.sender_hidden,
+                                       cell=opts.sender_cell, max_len=opts.max_len, num_layers=opts.sender_num_layers,
+                                       force_eos=force_eos)      
                   
         else:
             sender = Sender(n_features=opts.n_features, n_hidden=opts.sender_hidden)
@@ -337,7 +337,10 @@ def main(params):
                                                          opts.receiver_num_layers, causal=opts.causal_receiver)
     else:
         if opts.receiver_cell=='cnn':
-           pass       
+           receiver = Receiver(n_features=opts.n_features, n_hidden=opts.receiver_hidden)
+           receiver = CnnReceiverDeterministic(receiver, opts.vocab_size, opts.receiver_embedding,
+                                                     opts.receiver_hidden, cell=opts.receiver_cell,
+                                                     num_layers=opts.receiver_num_layers)       
                   
         else:
             receiver = Receiver(n_features=opts.n_features, n_hidden=opts.receiver_hidden)
